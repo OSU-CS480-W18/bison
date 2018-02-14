@@ -39,17 +39,21 @@ program
   ;
 
 statement
-  : IDENTIFIER EQUALS expression SEMICOLON
+  : IDENTIFIER EQUALS expression SEMICOLON { symbols[*$1] = $3; delete $1; }
   ;
 
 expression
-  : LPAREN expression RPAREN
-  | expression PLUS expression
-  | expression MINUS expression
-  | expression TIMES expression
-  | expression DIVIDEDBY expression
-  | NUMBER
-  | IDENTIFIER
+  : LPAREN expression RPAREN { $$ = $2; }
+  | expression PLUS expression { $$ = $1 + $3; }
+  | expression MINUS expression { $$ = $1 - $3; }
+  | expression TIMES expression { $$ = $1 * $3; }
+  | expression DIVIDEDBY expression { $$ = $1 / $3; }
+  | NUMBER { $$ = $1; }
+  | IDENTIFIER { $$ = symbols[*$1]; delete $1; }
   ;
 
 %%
+
+void yyerror(const char* err) {
+  std::cerr << "Error: " << err << std::endl;
+}
