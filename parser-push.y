@@ -2,11 +2,11 @@
 #include <iostream>
 #include <map>
 
+#include "parser-push.hpp"
+
 std::map<std::string, float> symbols;
 
-bool _error = false;
-
-void yyerror(const char* err);
+void yyerror(YYLTYPE* loc, const char* err);
 extern int yylex();
 %}
 
@@ -17,9 +17,11 @@ extern int yylex();
 }
 
 /* %define api.value.type { std::string* } */
+
 %locations
 
-%define parse.error verbose
+%define api.pure full
+%define api.push-pull push
 
 %token <str> IDENTIFIER
 %token <value> NUMBER
@@ -45,7 +47,6 @@ program
 
 statement
   : IDENTIFIER EQUALS expression SEMICOLON { symbols[*$1] = $3; delete $1; }
-  | error SEMICOLON { std::cerr << "Error: bad statement on line " << @1.first_line << std::endl; _error = true; }
   ;
 
 expression
@@ -55,20 +56,11 @@ expression
   | expression TIMES expression { $$ = $1 * $3; }
   | expression DIVIDEDBY expression { $$ = $1 / $3; }
   | NUMBER { $$ = $1; }
-  | IDENTIFIER {
-    if (symbols.count(*$1)) {
-      $$ = symbols[*$1];
-    } else {
-      std::cerr << "Error: unknown symbol " << *$1 << " at line " << @1.first_line << std::endl;
-      _error = true;
-      YYERROR;
-    }
-    delete $1;
-  }
+  | IDENTIFIER { $$ = symbols[*$1]; delete $1; }
   ;
 
 %%
 
-void yyerror(const char* err) {
+void yyerror(YYLTYPE* loc, const char* err) {
   std::cerr << "Error: " << err << std::endl;
 }
